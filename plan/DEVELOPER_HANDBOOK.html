@@ -1,0 +1,998 @@
+<title>dv-service Developer Handbook</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5b5b5b;
+    --rule: #d8d8d2;
+    --bg: #ffffff;
+    --accent: #7c4a2d;
+    --code-bg: #f6f5f2;
+    --note-bg: #f4f1ea;
+    --warn-bg: #fdf2ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 Georgia, "Iowan Old Style", "Times New Roman", serif;
+  }
+  .page { max-width: 46rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  h1, h2, h3, h4 { font-family: "Helvetica Neue", Arial, sans-serif; line-height: 1.25; }
+  h1 { font-size: 2.1rem; margin: 0 0 .3rem; letter-spacing: -.02em; }
+  h2 {
+    font-size: 1.45rem; margin: 3.5rem 0 1rem;
+    padding-top: 1rem; border-top: 2px solid var(--ink);
+  }
+  h3 { font-size: 1.1rem; margin: 2rem 0 .6rem; }
+  h4 { font-size: .95rem; margin: 1.4rem 0 .4rem; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+  p { margin: 0 0 1rem; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+  li { margin-bottom: .4rem; }
+
+  .sub { color: var(--muted); font-family: "Helvetica Neue", Arial, sans-serif; font-size: .95rem; margin-bottom: 2rem; }
+
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: .85em; background: var(--code-bg);
+    padding: .1em .35em; border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); border-left: 3px solid var(--rule);
+    padding: .9rem 1rem; overflow-x: auto; border-radius: 3px;
+    font-size: .8rem; line-height: 1.5; margin: 0 0 1.2rem;
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+
+  table { border-collapse: collapse; width: 100%; margin: 0 0 1.4rem; font-size: .88rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-family: "Helvetica Neue", Arial, sans-serif; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 2px solid var(--ink); }
+  .scroll { overflow-x: auto; }
+
+  .note, .warn {
+    padding: .9rem 1.1rem; margin: 0 0 1.3rem;
+    border-radius: 4px; font-size: .93rem;
+  }
+  .note { background: var(--note-bg); border-left: 3px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 3px solid #c1553a; }
+  .note strong, .warn strong { font-family: "Helvetica Neue", Arial, sans-serif; }
+
+  .toc { background: var(--note-bg); padding: 1.4rem 1.6rem; border-radius: 4px; margin: 2rem 0 3rem; font-family: "Helvetica Neue", Arial, sans-serif; font-size: .9rem; }
+  .toc h2 { border: none; margin: 0 0 .8rem; padding: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin-bottom: .25rem; }
+  .toc a { color: var(--ink); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol ol { margin-top: .25rem; color: var(--muted); }
+
+  .analogy { font-style: italic; color: var(--muted); border-left: 2px solid var(--rule); padding-left: 1rem; margin: 0 0 1.2rem; }
+
+  .flow { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .78rem; line-height: 1.7; background: var(--code-bg); padding: 1rem; border-radius: 3px; margin: 0 0 1.3rem; white-space: pre; overflow-x: auto; }
+
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { page-break-before: auto; page-break-after: avoid; }
+    h3, h4 { page-break-after: avoid; }
+    pre, table, .note, .warn, .flow { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+  }
+</style>
+
+<div class="page">
+
+<h1>dv-service Developer Handbook</h1>
+<p class="sub">A ground-up guide for a developer new to backend work — the concepts first, then how this specific project uses them.</p>
+
+<div class="note">
+<strong>How to read this.</strong> Parts 1–2 assume you know nothing about backend development and explain the ideas. Parts 3–6 apply those ideas to this codebase. If you already know what an API and a database are, start at Part 3. Every claim about this project cites the file it comes from, so you can go read the real thing.
+</div>
+
+<div class="toc">
+<h2>Contents</h2>
+<ol>
+  <li><a href="#part1">Part 1 — What a backend actually is</a>
+    <ol>
+      <li><a href="#s1">Client and server</a></li>
+      <li><a href="#s2">HTTP: the request and the response</a></li>
+      <li><a href="#s3">What an API is</a></li>
+      <li><a href="#s4">What a database is</a></li>
+      <li><a href="#s5">Transactions: all or nothing</a></li>
+      <li><a href="#s6">Doing work later: queues and events</a></li>
+      <li><a href="#s7">Caching</a></li>
+      <li><a href="#s8">Dependency injection</a></li>
+    </ol>
+  </li>
+  <li><a href="#part2">Part 2 — The shape of this project</a>
+    <ol start="9">
+      <li><a href="#s9">The stack</a></li>
+      <li><a href="#s10">The layer cake</a></li>
+      <li><a href="#s11">Folder map</a></li>
+      <li><a href="#s12">How the app starts</a></li>
+      <li><a href="#s13">Decorators, or: where are the routes?</a></li>
+      <li><a href="#s14">Following one real request</a></li>
+    </ol>
+  </li>
+  <li><a href="#part3">Part 3 — The data layer</a>
+    <ol start="15">
+      <li><a href="#s15">Schema and migrations</a></li>
+      <li><a href="#s16">Repositories</a></li>
+      <li><a href="#s17">Transactions in practice</a></li>
+    </ol>
+  </li>
+  <li><a href="#part4">Part 4 — The event system</a>
+    <ol start="18">
+      <li><a href="#s18">Why events exist here</a></li>
+      <li><a href="#s19">The outbox pattern</a></li>
+      <li><a href="#s20">Consumers and workers</a></li>
+      <li><a href="#s21">Background processors</a></li>
+    </ol>
+  </li>
+  <li><a href="#part5">Part 5 — The business domain</a>
+    <ol start="22">
+      <li><a href="#s22">Glossary</a></li>
+      <li><a href="#s23">Status lifecycles</a></li>
+      <li><a href="#s24">The review system</a></li>
+      <li><a href="#s25">The fraud subsystem</a></li>
+    </ol>
+  </li>
+  <li><a href="#part6">Part 6 — Working as a developer here</a>
+    <ol start="26">
+      <li><a href="#s26">Running it locally</a></li>
+      <li><a href="#s27">Testing</a></li>
+      <li><a href="#s28">Adding a feature, end to end</a></li>
+      <li><a href="#s29">Debugging: where to look</a></li>
+      <li><a href="#s30">Conventions this codebase holds to</a></li>
+    </ol>
+  </li>
+</ol>
+</div>
+
+<h2 id="part1">Part 1 — What a backend actually is</h2>
+
+<h3 id="s1">1. Client and server</h3>
+
+<p>Software that people use is almost always split in two halves.</p>
+
+<p>The <strong>client</strong> is the part running on the user's device — a web page in a browser, a mobile app. It draws buttons and text. It is <em>untrusted</em>: anyone can open developer tools and change what it does.</p>
+
+<p>The <strong>server</strong> (the "backend") runs on a computer you control. It holds the real data, enforces the rules, and answers questions from clients. This project — <code>dv-service</code> — is a server. It has no user interface at all. Its entire job is to answer requests.</p>
+
+<p class="analogy">Think of a restaurant. The client is the customer reading a menu and asking for things. The server is the kitchen: it holds the ingredients, decides what's actually available, and refuses to serve you something that isn't on the menu no matter how nicely you ask.</p>
+
+<p>That last part is the key idea and it comes up constantly in this codebase. <strong>Rules must be enforced on the server</strong>, because the client can lie. You will find comments in this repo saying exactly that — for example, in <code>SubmissionReviewsController.ts</code>, the fraud gate is checked server-side with the note that the workstream is pointless "if a client can route around the Forensics page by calling this endpoint directly."</p>
+
+<h3 id="s2">2. HTTP: the request and the response</h3>
+
+<p>Clients and servers talk over HTTP. Every exchange is one <strong>request</strong> and one <strong>response</strong>.</p>
+
+<h4>A request has four parts</h4>
+
+<table>
+<tr><th>Part</th><th>What it is</th><th>Example</th></tr>
+<tr><td>Method</td><td>The verb — what kind of action</td><td><code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE</code></td></tr>
+<tr><td>Path</td><td>Which resource</td><td><code>/v1/programs/abc-123/submissions</code></td></tr>
+<tr><td>Headers</td><td>Metadata — who you are, what format you want</td><td><code>Authorization: Bearer &lt;token&gt;</code></td></tr>
+<tr><td>Body</td><td>The data you're sending (not used by GET)</td><td><code>{ "outcome": "fraud_detected" }</code></td></tr>
+</table>
+
+<p>The methods have conventional meanings, and this codebase follows them:</p>
+
+<ul>
+<li><strong>GET</strong> — read something. Must not change anything. You can call it a hundred times safely.</li>
+<li><strong>POST</strong> — create something, or perform an action.</li>
+<li><strong>PATCH</strong> — partially update something that exists.</li>
+<li><strong>PUT</strong> — replace something wholesale.</li>
+<li><strong>DELETE</strong> — remove something.</li>
+</ul>
+
+<div class="note">
+<strong>Why "GET must not change anything" matters.</strong> In this codebase you'll find <code>FraudCheckService.listUnchecked</code> carries the comment "Read-only: browsing the queue must not claim anything, or a reviewer scrolling a list would lock every file they looked at." That's this rule, enforced in the domain.
+</div>
+
+<h4>A response has three parts</h4>
+
+<p>A <strong>status code</strong> (a number saying how it went), headers, and a body (the data).</p>
+
+<table>
+<tr><th>Code</th><th>Name</th><th>Means</th></tr>
+<tr><td>200</td><td>OK</td><td>It worked. Data is in the body.</td></tr>
+<tr><td>201</td><td>Created</td><td>It worked and made something new.</td></tr>
+<tr><td>400</td><td>Bad Request</td><td>You sent something malformed. Your fault.</td></tr>
+<tr><td>401</td><td>Unauthorized</td><td>We don't know who you are. Log in.</td></tr>
+<tr><td>403</td><td>Forbidden</td><td>We know who you are; you're not allowed.</td></tr>
+<tr><td>404</td><td>Not Found</td><td>No such thing.</td></tr>
+<tr><td>409</td><td>Conflict</td><td>Valid request, but it clashes with current state.</td></tr>
+<tr><td>429</td><td>Too Many Requests</td><td>You're going too fast (rate limited).</td></tr>
+<tr><td>500</td><td>Internal Server Error</td><td>We broke. Our fault.</td></tr>
+</table>
+
+<p>The 4xx/5xx split is worth internalising: <strong>4xx means the caller did something wrong, 5xx means the server did.</strong> Choosing correctly is how a frontend developer knows whether to fix their code or file a bug against you.</p>
+
+<p>409 is used heavily in this project and is worth understanding. When two reviewers try to claim the same file, the loser gets a 409 — the request was well-formed, the caller is allowed, but the world moved. See <code>SubmissionFraudChecksController.claimFraudCheck</code>, where the comment reads: "A lost race is a 409, not a 500."</p>
+
+<h3 id="s3">3. What an API is</h3>
+
+<p>An <strong>API</strong> (Application Programming Interface) is the set of requests a server agrees to answer. It's a contract: "send me this shape, I'll send you back that shape."</p>
+
+<p>This project exposes a <strong>REST</strong> API, which is a style, not a technology. Its central idea is that URLs name <em>things</em> (nouns) and methods name <em>actions</em> (verbs):</p>
+
+<pre><code>GET    /v1/programs/:program_id/submissions        → list submissions
+GET    /v1/programs/:program_id/submissions/:id    → read one submission
+POST   /v1/programs/:program_id/settings           → create settings
+PATCH  /v1/programs/:program_id/settings           → update settings</code></pre>
+
+<p>The <code>:program_id</code> part is a <strong>path parameter</strong> — a placeholder filled in with a real value. There are also <strong>query parameters</strong> after a <code>?</code>, used for options that don't identify the resource:</p>
+
+<pre><code>GET /v1/programs/abc/submissions?pageNo=2&amp;pageLimit=50&amp;mode=inconclusive</code></pre>
+
+<p>The <code>v1</code> is <strong>versioning</strong>. Once clients depend on your API, you can't change its shape without breaking them, so a new incompatible version lives at <code>v2</code> while <code>v1</code> keeps working.</p>
+
+<div class="note">
+<strong>This is why "additive changes" are safe and "changed meanings" are not.</strong> Adding an optional field to a response breaks nobody — old clients ignore it. Removing a field, or changing what an existing field means, breaks everyone. You'll see this reasoning in the codebase: an optional field was added to a response type specifically "so a client that predates them keeps parsing this branch unchanged."
+</div>
+
+<h3 id="s4">4. What a database is</h3>
+
+<p>The server needs to remember things between requests. That's the database. This project uses <strong>PostgreSQL</strong>, a <em>relational</em> database.</p>
+
+<p>Relational means data lives in <strong>tables</strong> — like spreadsheets. A table has named <strong>columns</strong> (each with a type: text, number, date, true/false) and any number of <strong>rows</strong>.</p>
+
+<pre><code>submissions
+┌──────────┬─────────────┬────────────┬─────────────────────┐
+│ id       │ program_id  │ status     │ created_at          │
+├──────────┼─────────────┼────────────┼─────────────────────┤
+│ 3fc72e4a │ 3f391910    │ in_review  │ 2026-08-11 21:18:03 │
+│ 24972a60 │ 3f391910    │ approved   │ 2026-08-11 21:18:34 │
+└──────────┴─────────────┴────────────┴─────────────────────┘</code></pre>
+
+<h4>Keys and relationships</h4>
+
+<p>Every row needs a unique identifier — the <strong>primary key</strong>. This project uses UUIDs (those long <code>3fc72e4a-4603-...</code> strings) rather than counting numbers, because UUIDs can be generated anywhere without coordination and don't leak how many records you have.</p>
+
+<p>A <strong>foreign key</strong> is a column pointing at another table's primary key. That's the "relational" part. <code>submissions.program_id</code> points at <code>programs.id</code>, which is how the database knows a submission belongs to a program.</p>
+
+<p>Foreign keys can carry rules. In <code>src/db/schema/submissionFileFraudChecks.ts</code>:</p>
+
+<pre><code>submission_id: uuid('submission_id')
+    .notNull()
+    .references(() => submissions.id, { onDelete: 'cascade' })</code></pre>
+
+<p><code>onDelete: 'cascade'</code> means "if the submission is deleted, delete this row too." The alternative, <code>set null</code>, blanks the reference instead. Choosing between them is a real design decision about what should survive what.</p>
+
+<h4>Indexes</h4>
+
+<p>Finding a row by scanning every row is slow once you have millions. An <strong>index</strong> is a lookup structure the database maintains so it can jump straight to matching rows — like the index at the back of a book.</p>
+
+<p>Indexes cost you: every write has to update them. So you add them deliberately, for queries you actually run. This codebase does exactly that, and even documents the query an index was built for:</p>
+
+<pre><code>index('idx_fraud_checks_live_claim')
+    .on(table.submission_file_id)
+    .where(sql`${table.outcome} IS NULL AND ${table.superseded_at} IS NULL`)</code></pre>
+
+<p>That's a <strong>partial index</strong> — it only indexes rows matching the <code>WHERE</code>, keeping it small and fast.</p>
+
+<h4>Constraints</h4>
+
+<p>A <strong>constraint</strong> is a rule the database itself enforces, so bad data physically cannot be written even if application code has a bug. The most important kind here is the <strong>unique index</strong>:</p>
+
+<pre><code>uniqueIndex('submission_file_fraud_checks_one_live_per_file')
+    .on(table.submission_file_id)
+    .where(sql`${table.superseded_at} IS NULL`)</code></pre>
+
+<p>This says: at most one non-superseded fraud check per file, ever. The comment above it explains the philosophy — "'Exactly once per file' is a DATABASE invariant, not application logic."</p>
+
+<div class="note">
+<strong>Learn this instinct early.</strong> If two users can do something at the same moment, application-level checks ("look first, then write") are not enough — both can look, both can see nothing, both can write. A unique constraint makes the database arbitrate, and exactly one wins. This is called a <em>race condition</em>, and constraints are the standard cure.
+</div>
+
+<h4>SQL and the ORM</h4>
+
+<p><strong>SQL</strong> is the language for talking to the database:</p>
+
+<pre><code>SELECT * FROM submissions WHERE program_id = 'abc' ORDER BY created_at DESC;</code></pre>
+
+<p>Writing SQL as raw strings in application code is error-prone — typos aren't caught until runtime, and building queries by string concatenation opens <em>SQL injection</em>, where user input becomes executable SQL.</p>
+
+<p>An <strong>ORM</strong> (Object-Relational Mapper) lets you express queries in TypeScript instead, with the compiler checking column names and types. This project uses <strong>Drizzle</strong>. You define the table once and get types for free:</p>
+
+<pre><code>export type ProgramSetting = InferSelectModel&lt;typeof programSettings&gt;;</code></pre>
+
+<p>Now if you rename a column, every place that reads it fails to compile — you find out immediately rather than in production.</p>
+
+<h3 id="s5">5. Transactions: all or nothing</h3>
+
+<p>Some operations need several writes that must all happen or none happen. The classic example is a bank transfer: subtract from A, add to B. If the server crashes between them, money vanishes.</p>
+
+<p>A <strong>transaction</strong> groups writes so they <em>commit</em> together or <em>roll back</em> together. Nothing in between is ever visible to anyone else.</p>
+
+<pre><code>await this.transactionService.executeInTransaction(async (tx) => {
+    const claim = await this.fraudCheckRepo.claim(data, tx);
+    await this.scheduleClaimTimeout(claim, tx);
+});</code></pre>
+
+<p>Both writes take the same <code>tx</code> handle, so they're one unit. This exact code is in <code>FraudCheckService.claimForCheck</code>, and the comment says why: "a committed claim with a lost timeout is the exact failure this worker exists to prevent."</p>
+
+<p>You'll see <code>tx?: DrizzleTransaction</code> as an optional last parameter throughout the repos. That's the pattern: <em>if</em> the caller is already in a transaction, join it; otherwise open your own.</p>
+
+<h3 id="s6">6. Doing work later: queues and events</h3>
+
+<p>Some work shouldn't happen while the caller waits. If uploading a file also meant analysing the image, checking it against every other file, and calling three external services, the upload request would take thirty seconds and time out.</p>
+
+<p>The fix is to do the fast part now, record that the slow part is needed, and answer immediately. Something else picks the work up.</p>
+
+<p>The mechanism is a <strong>message queue</strong> — this project uses <strong>RabbitMQ</strong>. Terms you need:</p>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><strong>Event</strong></td><td>A record that something happened. Past tense, factual: <code>SUBMISSION_FILE_DATA_SYNCED</code>.</td></tr>
+<tr><td><strong>Publish</strong></td><td>Announce an event.</td></tr>
+<tr><td><strong>Queue</strong></td><td>A named line where messages wait.</td></tr>
+<tr><td><strong>Exchange</strong></td><td>The router that decides which queues get a copy of a message.</td></tr>
+<tr><td><strong>Consumer</strong></td><td>Code that takes messages off a queue and acts on them.</td></tr>
+<tr><td><strong>Routing key</strong></td><td>A label on the message the exchange matches against.</td></tr>
+</table>
+
+<p>The important property is <strong>decoupling</strong>. The code that publishes doesn't know or care who listens. You can add a second listener without touching the publisher. In this project, <code>SUBMISSION_FILE_DATA_SYNCED</code> has two independent listeners — the fraud verdict worker and the security flags worker — and the comment in <code>fraud-verdict-worker.consumer.ts</code> explains the reasoning: "split transport by <em>compute profile</em>, not by policy," so a heavy analyser can't slow a light one.</p>
+
+<h4>Delivery guarantees</h4>
+
+<p>Networks fail mid-delivery, so systems choose between:</p>
+
+<ul>
+<li><strong>At-most-once</strong> — never duplicated, might be lost.</li>
+<li><strong>At-least-once</strong> — never lost, might be duplicated.</li>
+</ul>
+
+<p>This project chooses <strong>at-least-once</strong>. That means <em>your consumer might run twice on the same message</em>, so handlers must be <strong>idempotent</strong> — running twice has the same effect as running once. This is not optional; it's a correctness requirement for every consumer you write.</p>
+
+<h3 id="s7">7. Caching</h3>
+
+<p>A <strong>cache</strong> is a fast, temporary copy of data that's expensive to fetch. This project uses <strong>Redis</strong>, an in-memory store.</p>
+
+<p>The pattern is <em>cache-aside</em>: look in the cache; if it's there (a <em>hit</em>), use it; if not (a <em>miss</em>), read the database, then store the result for next time.</p>
+
+<p>The hard part is <strong>invalidation</strong> — throwing away cached data when the real data changes. Get it wrong and users see stale information. The repository base class in this project handles invalidation automatically when records change; see <code>docs/data-layer/caching/</code>.</p>
+
+<p>Redis is also used here for <strong>rate limiting</strong> (counting requests per caller across multiple server instances), via <code>rate-limit-redis</code>.</p>
+
+<h3 id="s8">8. Dependency injection</h3>
+
+<p>This is the concept most likely to feel strange, so here it is slowly.</p>
+
+<p>A service usually needs other things to do its job. <code>FraudCheckService</code> needs a repository, a logger, a transaction service. The naive approach is to build them itself:</p>
+
+<pre><code>class FraudCheckService {
+    private repo = new SubmissionFileFraudCheckRepo();   // ← builds its own
+}</code></pre>
+
+<p>Three problems. It's now impossible to test without a real database. Everyone who needs a repo makes their own copy. And if the repo's constructor changes, every one of these lines breaks.</p>
+
+<p><strong>Dependency injection</strong> inverts it: the class <em>declares</em> what it needs and something else supplies it.</p>
+
+<pre><code>@Service()
+@injectable()
+export class FraudCheckService {
+    constructor(
+        @inject(SubmissionFileFraudCheckRepo)
+        private fraudCheckRepo: SubmissionFileFraudCheckRepo,
+        @inject(LoggerService) private logger: LoggerService
+    ) {}
+}</code></pre>
+
+<p>The "something else" is the <strong>container</strong> — here, <strong>TSyringe</strong> (<code>src/container.ts</code>). It knows how to build every registered class and wires the graph for you.</p>
+
+<p>Two payoffs:</p>
+
+<ol>
+<li><strong>Testing.</strong> Hand it a fake repo and you can test the service with no database at all. That's precisely what <code>__tests__/unit/services/appServices/FraudCheckService.test.ts</code> does — <code>mockFraudCheckRepo.getLiveCheckForFile.mockResolvedValue(...)</code>.</li>
+<li><strong>Singletons.</strong> One database connection pool shared by everything, rather than each class opening its own.</li>
+</ol>
+
+<p class="analogy">A chef who declares "I need a knife and a pan" and is handed them, versus a chef who forges their own knife every time they cook. The first can be given a plastic training knife for a rehearsal.</p>
+
+<h2 id="part2">Part 2 — The shape of this project</h2>
+
+<h3 id="s9">9. The stack</h3>
+
+<p>From <code>package.json</code>:</p>
+
+<table>
+<tr><th>Concern</th><th>Choice</th><th>What it does</th></tr>
+<tr><td>Language</td><td>TypeScript 5</td><td>JavaScript with types checked before it runs</td></tr>
+<tr><td>Runtime</td><td>Node.js</td><td>Runs JavaScript on a server</td></tr>
+<tr><td>Web framework</td><td>Express 5</td><td>Receives HTTP requests, routes them to your code</td></tr>
+<tr><td>DI container</td><td>TSyringe</td><td>Builds and wires classes</td></tr>
+<tr><td>Database</td><td>PostgreSQL + <code>pg</code></td><td>Durable storage</td></tr>
+<tr><td>ORM</td><td>Drizzle</td><td>Type-safe queries; schema as TypeScript</td></tr>
+<tr><td>Migrations</td><td>drizzle-kit</td><td>Versioned schema changes</td></tr>
+<tr><td>Cache</td><td>Redis</td><td>Fast shared memory; rate limit counters</td></tr>
+<tr><td>Queue</td><td>RabbitMQ (<code>amqplib</code>)</td><td>Background and cross-service messaging</td></tr>
+<tr><td>Validation</td><td>Zod</td><td>Checks untrusted input matches a shape</td></tr>
+<tr><td>Auth</td><td><code>jose</code> (JWT)</td><td>Signed tokens proving who a caller is</td></tr>
+<tr><td>Logging</td><td>Winston</td><td>Structured logs</td></tr>
+<tr><td>Testing</td><td>Vitest + supertest</td><td>Unit and HTTP-level integration tests</td></tr>
+<tr><td>Scaffolding</td><td>Plop</td><td>Generates boilerplate for new features</td></tr>
+<tr><td>Local env</td><td>Docker Compose</td><td>Runs Postgres/Redis/RabbitMQ on your machine</td></tr>
+<tr><td>Security</td><td>helmet, cors</td><td>Safe HTTP headers; controls who may call you</td></tr>
+</table>
+
+<h3 id="s10">10. The layer cake</h3>
+
+<p>This is the single most important structural idea in the codebase. Every request travels down through the same four layers, and <strong>each layer may only talk to the one directly below it.</strong></p>
+
+<div class="flow">┌──────────────────────────────────────────────────────┐
+│  CONTROLLER   HTTP in, HTTP out                      │
+│               parse params, validate body, pick      │
+│               a status code. No business rules.      │
+├──────────────────────────────────────────────────────┤
+│  SERVICE      Business logic. Decides what should    │
+│               happen. Owns transactions. Knows       │
+│               nothing about HTTP.                    │
+├──────────────────────────────────────────────────────┤
+│  REPOSITORY   Data access. Builds queries. Knows     │
+│               nothing about business rules.          │
+├──────────────────────────────────────────────────────┤
+│  DATABASE     PostgreSQL                             │
+└──────────────────────────────────────────────────────┘</div>
+
+<h4>Why bother</h4>
+
+<p>Because each layer becomes testable and replaceable on its own. A service with no HTTP knowledge can be tested by calling a method — no server, no network. A repository with no business rules can be reused by three different services without any of them inheriting the others' assumptions.</p>
+
+<h4>The rule of thumb for "where does my code go?"</h4>
+
+<table>
+<tr><th>If the code…</th><th>It belongs in…</th></tr>
+<tr><td>reads <code>req.params</code>, <code>req.body</code>, or picks a status code</td><td>Controller</td></tr>
+<tr><td>decides whether something is allowed, or orchestrates several steps</td><td>Service</td></tr>
+<tr><td>builds a query or touches a table</td><td>Repository</td></tr>
+<tr><td>must be true no matter what code runs (uniqueness, referential integrity)</td><td>Database constraint</td></tr>
+</table>
+
+<div class="warn">
+<strong>The most common beginner mistake</strong> is putting business logic in the controller because it's convenient. The test is: <em>could a background worker need this same rule?</em> If yes, it belongs in a service, because a worker has no <code>req</code> object. This project has real examples — the fraud gate is checked in the controller, but the <em>decision</em> lives in <code>FraudCheckService.evaluateGate</code>, so both HTTP entry points and any future caller share one implementation.
+</div>
+
+<h3 id="s11">11. Folder map</h3>
+
+<p>Inside <code>src/</code>:</p>
+
+<table>
+<tr><th>Folder</th><th>Contains</th></tr>
+<tr><td><code>api/</code></td><td>Controllers, grouped by domain area, plus <code>*.api.ts</code> files that group controllers under a base path</td></tr>
+<tr><td><code>services/appServices/</code></td><td>Business logic — 66 services, the heart of the application</td></tr>
+<tr><td><code>services/eventConsumers/</code></td><td>Code that reacts to queue messages</td></tr>
+<tr><td><code>services/eventProcessing/</code></td><td>Background loops (outbox, sweeps)</td></tr>
+<tr><td><code>services/eventPublishing/</code></td><td>How events get written and sent</td></tr>
+<tr><td><code>repos/</code></td><td>Data access, one folder per table area</td></tr>
+<tr><td><code>db/schema/</code></td><td>Table definitions — 45 files, one per table</td></tr>
+<tr><td><code>models/</code></td><td>Zod schemas: runtime validation of input shapes</td></tr>
+<tr><td><code>decorators/</code></td><td>The <code>@Get</code>, <code>@Service</code>, <code>@EventConsumer</code> machinery</td></tr>
+<tr><td><code>middlewares/</code></td><td>Code that runs before controllers (auth, parsing)</td></tr>
+<tr><td><code>startup/</code></td><td>Managers that assemble the app at boot</td></tr>
+<tr><td><code>config/</code></td><td>Environment loading and Zod validation</td></tr>
+<tr><td><code>datastores/</code></td><td>Connection objects for Postgres and Redis</td></tr>
+<tr><td><code>errors/</code></td><td>Error classes like <code>BadRequestError</code></td></tr>
+<tr><td><code>common/constants/</code></td><td>Shared constants — event types, queue names</td></tr>
+<tr><td><code>utils/</code></td><td>Logger, JWT, small helpers</td></tr>
+</table>
+
+<p>Note the naming discipline: <code>src/db/schema/</code> is what the table <em>is</em>; <code>src/models/</code> is what an incoming request is <em>allowed to contain</em>. They look similar and do different jobs. The schema is about storage; the model is about trust.</p>
+
+<h3 id="s12">12. How the app starts</h3>
+
+<p>Read <code>src/index.ts</code> top to bottom — it's the clearest map of the system. The order is deliberate, because each phase depends on the last.</p>
+
+<div class="flow">1. reflect-metadata + dotenv        load decorator support, read .env
+2. ConfigurationManager             fetch AWS secrets, validate all config with Zod
+3. LoggerService                    now that config exists, real logging starts
+4. Infrastructure, each optional:
+     ├── PostgreSQL (DrizzleInstance.connect)
+     ├── Redis      (RedisInstance.connect)
+     └── RabbitMQ   (StartupRabbitMQManager)
+5. Resolve App from the container   dependencies find live connections
+6. app.start()
+     ├── JWTService.initialize
+     ├── database init
+     ├── RabbitMQ services
+     ├── OutboxProcessor.start()    ← background loops begin here
+     ├── other processors + consumers
+     ├── route discovery & mounting
+     └── error handler (must be last)
+7. Listen on the port
+8. SIGINT / SIGTERM → graceful shutdown</div>
+
+<p>Two things worth noticing as a beginner.</p>
+
+<p><strong>Config is validated before anything else runs.</strong> If a required environment variable is missing, the app refuses to start and prints exactly which one. That is far better than starting successfully and failing mysteriously an hour later. This is a pattern worth copying in your own work: <em>fail fast, at boot, with a clear message.</em></p>
+
+<p><strong>Infrastructure is optional and gated.</strong> Each block checks <code>IS_ENABLED</code> first. That's what lets unit tests run with no database and no queue.</p>
+
+<p><strong>Graceful shutdown matters.</strong> When the process is asked to stop, it finishes in-flight requests instead of dropping them. Without this, every deployment would produce a handful of mysterious errors.</p>
+
+<h3 id="s13">13. Decorators, or: where are the routes?</h3>
+
+<p>If you come from tutorials, you expect a file listing every route:</p>
+
+<pre><code>app.get('/users', getUsers);
+app.post('/users', createUser);</code></pre>
+
+<p>There is no such file here, and its absence confuses everyone at first. Instead this project uses <strong>decorators</strong> — the <code>@Something</code> annotations above classes and methods.</p>
+
+<p>A decorator is just a function that runs when the class is defined and can record information about it. This project uses them to build a registry at startup:</p>
+
+<pre><code>@Controller()                                   // ← "remember this class"
+@injectable()
+export class SubmissionFraudChecksController extends BaseController {
+
+    @Get('/:submission_id/files/:submission_file_id/fraud-check')   // ← "this method is a route"
+    @RateLimited({ max: 30, windowMs: 1000 })                       // ← "cap it at 30/sec"
+    @AdminAuthUserMiddlewareWithProfile                             // ← "require a logged-in admin"
+    async getFraudCheckState(req: Request, res: Response) { ... }
+}</code></pre>
+
+<p>At boot, the startup managers walk the registry and mount everything. The flow is:</p>
+
+<ol>
+<li>Decorators record classes into <code>DIRegistry</code>, keyed by symbols (<code>CONTROLLER</code>, <code>SERVICE</code>, <code>REPO</code>, <code>API</code>, …).</li>
+<li>Registration functions ask the container to build each one.</li>
+<li><code>StartupRoutesManager</code> reads the route metadata and calls Express for you.</li>
+</ol>
+
+<p>The decorators you'll use most:</p>
+
+<table>
+<tr><th>Decorator</th><th>Purpose</th></tr>
+<tr><td><code>@Controller()</code></td><td>Register a class as an HTTP controller</td></tr>
+<tr><td><code>@Api()</code></td><td>Group controllers under a base path like <code>v1/programs</code></td></tr>
+<tr><td><code>@Service()</code></td><td>Register a business-logic class</td></tr>
+<tr><td><code>@Repo()</code></td><td>Register a data-access class</td></tr>
+<tr><td><code>@Get/@Post/@Patch/@Put/@Delete('path')</code></td><td>Declare a route</td></tr>
+<tr><td><code>@RateLimited({ max, windowMs })</code></td><td>Throttle a route</td></tr>
+<tr><td><code>@AdminAuthUserMiddleware</code></td><td>Require authentication</td></tr>
+<tr><td><code>@EventConsumer({...})</code> / <code>@EventHandler</code></td><td>Bind a class to a queue</td></tr>
+</table>
+
+<div class="note">
+<strong>Practical consequence:</strong> to add an endpoint you add a method with a decorator. You never edit a central routes file — there isn't one. To find which code serves a URL, grep for a distinctive part of the path.
+</div>
+
+<h3 id="s14">14. Following one real request</h3>
+
+<p>Here is a real endpoint from this codebase, traced all the way down. This is the single most useful exercise for understanding the project — do it yourself with a different endpoint afterwards.</p>
+
+<p><strong>Request:</strong> <code>GET /v1/submissions/{sid}/files/{fid}/fraud-check</code></p>
+
+<div class="flow">① Express receives the request
+   ↓
+② Global middleware: helmet, cors, compression, cookie/body parsing,
+   correlation id, response helpers (res.respond.*)
+   ↓
+③ @RateLimited — Redis counter for this caller. Over budget → 429, stop.
+   ↓
+④ @AdminAuthUserMiddlewareWithProfile — verify the JWT.
+   Invalid → 401, stop. Valid → attaches req.auth_user
+   ↓
+⑤ SubmissionFraudChecksController.getFraudCheckState
+   • resolveScope(): does this file belong to this submission,
+     in an org this user may see?  No → 404
+   ↓
+⑥ FraudCheckService.evaluateGate(fileId, reviewerId)      ← BUSINESS LOGIC
+   • read the file
+   • no fraud_verdict?         → { not_applicable, no_verdict }
+   • program gate disabled?    → { not_applicable, program_disabled }
+   • no live check row?        → { required, verdict }
+   • row has an outcome?       → { satisfied, check, verdict }
+   • otherwise                 → { in_progress, check, heldByYou }
+   ↓
+⑦ Repositories run the actual SQL via Drizzle
+   ↓
+⑧ res.respond.success('Fraud check state retrieved', state)  → 200 + JSON</div>
+
+<p>Notice what each layer did <em>not</em> do. The controller made no decisions about fraud. The service never touched <code>req</code> or a status code. The repository had no opinion about gates. That separation is the whole point, and it's why the same <code>evaluateGate</code> can be reused by a completely different controller (<code>SubmissionReviewsController</code>) without duplicating a line.</p>
+
+<h4>The response helper</h4>
+
+<p>You'll see <code>res.respond.success(...)</code>, <code>res.respond.notFound(...)</code>, <code>res.respond.conflict(...)</code> everywhere. These are added by middleware and exist so every endpoint returns the same envelope shape. Use them; don't hand-roll <code>res.status(200).json(...)</code>.</p>
+
+<h2 id="part3">Part 3 — The data layer</h2>
+
+<h3 id="s15">15. Schema and migrations</h3>
+
+<p>Each file in <code>src/db/schema/</code> defines one table in TypeScript:</p>
+
+<pre><code>export const programSettings = pgTable('program_settings', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    program_id: uuid('program_id').references(() =&gt; programs.id, { onDelete: 'cascade' }),
+    min_reviews_required: integer('min_reviews_required').notNull(),
+    fraud_check_required: boolean('fraud_check_required').notNull().default(false),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true })
+});</code></pre>
+
+<p>Things to note:</p>
+
+<ul>
+<li><strong><code>.notNull()</code></strong> — the column can never be empty. Prefer this. "Nullable by default" is how you end up with defensive <code>if (x == null)</code> checks scattered through the codebase.</li>
+<li><strong><code>.default(false)</code></strong> — existing rows get this value when the column is added, which is why adding a boolean flag doesn't break the 86,000 rows already there.</li>
+<li><strong><code>withTimezone: true</code></strong> — always store timestamps with a timezone. The app forces UTC (<code>process.env.TZ = 'Etc/Universal'</code> at the top of <code>app.ts</code>).</li>
+<li><strong><code>deleted_at</code></strong> — this is a <em>soft delete</em>. Rows aren't removed; they're marked. Queries filter them out. This preserves history and makes accidental deletion recoverable.</li>
+<li><strong><code>jsonb</code></strong> — a column holding arbitrary JSON. Flexible, but the database can't validate its shape, so you must be defensive when reading it. <code>submission_files.metadata</code> is jsonb, which is why the code writes <code>(file?.metadata as Record&lt;string, any&gt; | null)?.fraud_verdict</code>.</li>
+</ul>
+
+<h4>Migrations</h4>
+
+<p>Changing the TypeScript schema does not change the live database. A <strong>migration</strong> is a versioned SQL script that does. The workflow:</p>
+
+<pre><code>npm run db:generate     # compare schema to DB, write a migration file
+npm run db:migrate      # apply pending migrations</code></pre>
+
+<p>Migration files live in <code>drizzle/</code> and are committed to git. They run in order, so every environment reaches the same state.</p>
+
+<div class="warn">
+<strong>Golden rule:</strong> never edit a migration that has already run anywhere. Write a new one. An edited migration will not re-run on machines that already applied it, so environments silently diverge — the worst class of bug, because everything looks fine locally.
+</div>
+
+<h3 id="s16">16. Repositories</h3>
+
+<p>A repository wraps all access to one table. Business code never writes SQL directly; it calls a repo method.</p>
+
+<p>Repos here extend <code>BaseModelRepo</code>, which provides a lot for free:</p>
+
+<ul>
+<li><strong>Standard CRUD</strong> — <code>findFirst</code>, <code>findAll</code>, <code>insertOne</code>, <code>updateOneById</code>, <code>deleteOneById</code>.</li>
+<li><strong>Pagination</strong> — <code>findAll</code> returns a paginated envelope, not an unbounded list. (Returning "all rows" is a production outage waiting to happen.)</li>
+<li><strong>Caching</strong> — optional cache-aside with automatic invalidation.</li>
+<li><strong>Audit logging</strong> — who changed what, when.</li>
+<li><strong>Atomic operations</strong> — race-free updates like <code>atomicIncrement</code> and <code>atomicCompareAndSwap</code>.</li>
+<li><strong>Relations</strong> — <code>withRelations</code> pulls related rows in one query.</li>
+</ul>
+
+<h4>Two ways to read, and why it matters</h4>
+
+<p>This distinction caused real confusion recently, so it's worth spelling out.</p>
+
+<p><strong>Relation-based reads</strong> (<code>findFirst</code> with <code>withRelations</code>) return <em>whole rows</em>. Everything on the table comes back. That's why <code>GET /v1/programs/:pid/submissions/:sid</code> returns each file's full <code>metadata</code> including <code>fraud_verdict</code> — nobody chose to expose it; nobody excluded it either.</p>
+
+<p><strong>Hand-written SQL</strong> (used for list endpoints, for performance) selects named columns via <code>json_build_object(...)</code>. Only listed columns come back. That's why the submissions <em>list</em> has no <code>metadata</code> — the projection doesn't include it.</p>
+
+<div class="note">
+<strong>The lesson:</strong> before assuming a field isn't available, check <em>which</em> read path you're looking at. Two endpoints over the same table can expose very different amounts of it.
+</div>
+
+<h3 id="s17">17. Transactions in practice</h3>
+
+<p>The pattern used throughout:</p>
+
+<pre><code>await this.transactionService.executeInTransaction(async (tx) =&gt; {
+    const row   = await this.someRepo.insert(data, tx);
+    const other = await this.otherRepo.update(row.id, patch, tx);
+    await this.eventPublisher.publishInTransaction(event, tx);
+    return other;
+});</code></pre>
+
+<p>Three rules to internalise:</p>
+
+<ol>
+<li><strong>Pass <code>tx</code> to everything inside.</strong> A repo call that forgets it runs outside the transaction and will not roll back. This is a silent bug — everything looks fine until a failure leaves half-written state.</li>
+<li><strong>Keep transactions short.</strong> An open transaction holds locks. Never make an HTTP call to an external service inside one.</li>
+<li><strong>Let errors propagate.</strong> Rollback happens by throwing. Swallowing an exception inside a transaction commits the partial work.</li>
+</ol>
+
+<div class="warn">
+<strong>A real Postgres trap documented in this codebase.</strong> Inside a transaction, a raised unique-constraint violation <em>aborts the entire transaction</em> — every later statement fails too, and catching the error in JavaScript does not un-abort it. That's why inserts that expect contention use <code>.onConflictDoNothing()</code> and check the result, rather than try/catch. See the comment in <code>SubmissionFileFraudCheckRepo.claim</code>: this exact mistake once turned a clean 409 into a 500.
+</div>
+
+<h2 id="part4">Part 4 — The event system</h2>
+
+<h3 id="s18">18. Why events exist here</h3>
+
+<p>When a file arrives from the external Vault service, several things must happen: compute a fraud verdict, run security-flag detectors, maybe fire a customer webhook. Doing all of it inside the upload request would be slow and fragile — one slow analyser would break uploads.</p>
+
+<p>Instead the upload publishes one event and returns. Independent workers pick it up. If the fraud worker is down, uploads still succeed and the work is retried later.</p>
+
+<h3 id="s19">19. The outbox pattern</h3>
+
+<p>This is the most important pattern in the project's event system, and it solves a problem that isn't obvious until you've been burned by it.</p>
+
+<p><strong>The problem.</strong> You save a submission to the database, then publish an event to RabbitMQ. Two separate systems. If the process crashes between them, the data is saved but the event never fires — permanently. Nothing retries, because nothing knows it was supposed to happen. Reverse the order and you get the opposite bug: an event fires for data that was never saved.</p>
+
+<p><strong>The solution.</strong> Don't publish to RabbitMQ at all. Write the event <em>into the database</em>, in the same transaction as your data. A separate background process reads that table and publishes.</p>
+
+<div class="flow">Service code
+    │
+    ▼
+publishInTransaction(event, tx)
+    │
+    ▼
+outbox_events table  ← INSERT, same transaction as the business data
+    │                   (both commit, or neither does)
+    ▼
+OutboxProcessor      ← background loop, polls every 5s
+    │  ORDER BY priority ASC, created_at ASC
+    │  FOR UPDATE SKIP LOCKED   ← safe with many app instances
+    ▼
+RabbitMQ  (domain.events.topic)
+    │
+    ▼
+Consumers</div>
+
+<p>Now the guarantee is airtight: <em>if the transaction committed, the event exists and will eventually be published.</em> If it rolled back, the event row rolled back too — no orphan messages.</p>
+
+<p><code>FOR UPDATE SKIP LOCKED</code> is the bit that makes it safe to run several copies of the app: each processor claims rows nobody else holds, skipping locked ones instead of waiting.</p>
+
+<p>Publishing also supports <strong>priority</strong> and <strong>delayed delivery</strong> (<code>availableAt</code>) — which is how a claim schedules its own expiry five minutes in the future. From <code>FraudCheckService.scheduleClaimTimeout</code>, with the comment "Written in the same transaction as the claim via the outbox, so 'claimed but never released' is not a reachable state."</p>
+
+<h3 id="s20">20. Consumers and workers</h3>
+
+<p>A consumer binds a class to a queue with a decorator:</p>
+
+<pre><code>@EventConsumer({
+    events: [EVENT_TYPES.SUBMISSION_FILE_DATA_SYNCED],
+    queue: QUEUE_NAMES.FRAUD_VERDICT_WORKER,
+    exchange: 'domain.events.topic',
+    config: { prefetch: 10, retryAttempts: 3, deadLetterQueue: true, timeout: 30000 }
+})
+export class FraudVerdictWorkerConsumer extends BaseMonitoredConsumer { ... }</code></pre>
+
+<table>
+<tr><th>Option</th><th>Meaning</th></tr>
+<tr><td><code>prefetch</code></td><td>How many messages this worker holds at once. Higher = more throughput, more memory.</td></tr>
+<tr><td><code>retryAttempts</code></td><td>How many times to retry before giving up.</td></tr>
+<tr><td><code>deadLetterQueue</code></td><td>After final failure, park the message in the DLQ rather than dropping it.</td></tr>
+<tr><td><code>timeout</code></td><td>Kill a handler that hangs.</td></tr>
+</table>
+
+<p>The <strong>dead letter queue</strong> is where messages go to be inspected and replayed after a bug is fixed — a message that fails forever must not block the queue behind it, and must not vanish silently. See <code>docs/event-system/dead-letter-queue-implementation.md</code>.</p>
+
+<p>The eight workers currently running are in <code>src/services/eventConsumers/workers/</code>: vault file events, fraud verdict, security flags, callback triggers, submission notifications, location creation, and two timeout workers (review session, fraud check claim).</p>
+
+<h3 id="s21">21. Background processors</h3>
+
+<p>Beyond queue consumers, <code>app.ts</code> starts several always-running loops:</p>
+
+<table>
+<tr><th>Processor</th><th>Job</th></tr>
+<tr><td><code>OutboxProcessor</code></td><td>Publish pending outbox events</td></tr>
+<tr><td><code>CallbackExecutionProcessor</code></td><td>Deliver webhooks to customer systems</td></tr>
+<tr><td><code>ExpiredSessionSweepProcessor</code></td><td>Release review sessions past their expiry</td></tr>
+<tr><td><code>FraudCheckClaimSweepProcessor</code></td><td>Release abandoned fraud-check claims</td></tr>
+<tr><td><code>DeadLetterProcessor</code></td><td>Handle permanently failed messages</td></tr>
+<tr><td><code>DelayedTaskProcessor</code></td><td>Run scheduled work</td></tr>
+<tr><td><code>QueueHealthMonitor</code></td><td>Watch queue depth and health</td></tr>
+</table>
+
+<div class="note">
+<strong>Why both a timeout message and a sweep?</strong> Belt and braces. The scheduled message handles the normal case promptly; the sweep catches anything the message system lost. When a stuck claim blocks other reviewers indefinitely, one mechanism isn't enough.
+</div>
+
+<h2 id="part5">Part 5 — The business domain</h2>
+
+<p>Now the concepts stop being generic backend theory and start being <em>this product</em>. dv-service is a <strong>document verification</strong> service: people submit photos (receipts, proof of purchase, store displays), and human reviewers decide whether each is valid.</p>
+
+<h3 id="s22">22. Glossary</h3>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><strong>Organization</strong></td><td>A customer of the platform. Everything is scoped by org; users never see another org's data.</td></tr>
+<tr><td><strong>Program</strong></td><td>One verification campaign — e.g. a rebate promotion. Owns its rules.</td></tr>
+<tr><td><strong>Program settings</strong></td><td>The knobs for a program: how many reviews are required, timeouts, whether final review is needed, whether the fraud gate is on.</td></tr>
+<tr><td><strong>Submission</strong></td><td>One person's entry into a program. Contains one or more files.</td></tr>
+<tr><td><strong>Submission file</strong></td><td>An individual uploaded image. This is what actually gets reviewed.</td></tr>
+<tr><td><strong>Version / revision</strong></td><td>If a submitter is asked to re-upload, a new file version is created. <code>is_latest</code> marks the live one.</td></tr>
+<tr><td><strong>Review</strong></td><td>One reviewer's decision on one file.</td></tr>
+<tr><td><strong>Review session</strong></td><td>A time-boxed claim on a file while someone works on it — stops two people reviewing the same thing simultaneously.</td></tr>
+<tr><td><strong>Final review</strong></td><td>An adjudication step when reviewers disagree or settings demand it.</td></tr>
+<tr><td><strong>Reason code</strong></td><td>A structured label explaining a decision ("Duplicate Submission"), rather than free text.</td></tr>
+<tr><td><strong>Vault</strong></td><td>The external service that stores files and extracts raw signals (EXIF, hashes, duplicates).</td></tr>
+<tr><td><strong>Callback / webhook</strong></td><td>An HTTP call <em>out</em> to the customer's system when something happens.</td></tr>
+</table>
+
+<h3 id="s23">23. Status lifecycles</h3>
+
+<h4>Submission statuses</h4>
+
+<table>
+<tr><th>Status</th><th>Meaning</th><th>Set by</th></tr>
+<tr><td><code>received</code></td><td>Arrived, no review activity yet</td><td>System, on creation</td></tr>
+<tr><td><code>in_review</code></td><td>Being worked on, or files in mixed states</td><td>System, automatically</td></tr>
+<tr><td><code>approved</code></td><td>All latest files approved and review minimums met</td><td>System, automatically</td></tr>
+<tr><td><code>rejected</code></td><td>Any latest file rejected</td><td>System, automatically</td></tr>
+<tr><td><code>on_hold</code></td><td>Paused for investigation</td><td>Admin, manually</td></tr>
+</table>
+
+<h4>File statuses</h4>
+
+<table>
+<tr><th>Status</th><th>Meaning</th></tr>
+<tr><td><code>pending</code></td><td>Awaiting review</td></tr>
+<tr><td><code>approved</code> / <code>rejected</code></td><td>Decided</td></tr>
+<tr><td><code>on_hold</code></td><td>Paused</td></tr>
+<tr><td><code>request_revision</code></td><td>Submitter asked to re-upload</td></tr>
+<tr><td><code>revised</code></td><td>Superseded by a newer version</td></tr>
+<tr><td><code>exempt</code></td><td>Excluded from submission-level aggregation entirely</td></tr>
+</table>
+
+<div class="note">
+<strong>The critical idea:</strong> submission status is <em>derived</em>, not set directly. When a file changes, <code>reevaluateSubmissionStatus()</code> in <code>SubmissionEventLogService</code> recomputes the parent. Never write a submission status by hand — you'd create a state the aggregation logic will silently overwrite. Full detail in <code>docs/domain/SUBMISSION_STATUS_GUIDE.md</code>.
+</div>
+
+<h3 id="s24">24. The review system</h3>
+
+<p>The normal path for a file:</p>
+
+<div class="flow">File arrives (pending)
+    ↓
+Reviewer starts a review session   ← claims the file, has a timeout
+    ↓
+Reviewer submits a decision        ← approve / reject / request revision / hold
+    ↓                                 with reason codes and notes as configured
+Has it met min_reviews_required?
+    ├── no  → wait for more reviewers
+    └── yes → do the reviewers agree?
+              ├── yes → auto-finalize (if settings allow)
+              └── no  → needs_final_review = true → adjudication
+    ↓
+File status set → submission status re-evaluated → callbacks fire</div>
+
+<p>Program settings that shape this: <code>min_reviews_required</code>, <code>max_concurrent_reviews_per_file</code>, <code>review_session_timeout_minutes</code>, <code>final_review_required_valid_entry</code>, <code>allow_direct_approval</code>, <code>require_reason_codes_for_decisions</code>, <code>require_notes_for_decisions</code>.</p>
+
+<h3 id="s25">25. The fraud subsystem</h3>
+
+<p>This is the newest and most intricate area, and the names are easy to confuse. There are <strong>three different things</strong>:</p>
+
+<table>
+<tr><th>Thing</th><th>Where it lives</th><th>What it is</th></tr>
+<tr><td><strong>Fraud verdict</strong></td><td><code>submission_files.metadata.fraud_verdict</code></td><td><em>Our</em> computed opinion. Written by <code>FraudVerdictWorkerConsumer</code> from Vault's raw signals. Has a <code>tier</code>: clear / review / high_risk.</td></tr>
+<tr><td><strong>Security flags</strong></td><td><code>submission_files.metadata.security_flags</code></td><td>Cross-submission detectors — impossible travel, repeat capture, store distance. Separate worker, heavier compute.</td></tr>
+<tr><td><strong>Fraud check</strong></td><td><code>submission_file_fraud_checks</code> table</td><td>A <em>human</em> attestation: a reviewer looked at the evidence and made a call. Outcome is <code>verified</code> or <code>fraud_detected</code>.</td></tr>
+</table>
+
+<p>The verdict is a machine opinion; the check is a person's signature. Keeping them apart is deliberate.</p>
+
+<h4>Why fraud checks aren't just reviews</h4>
+
+<p>A fraud check reads like a review, so why a separate table? The schema comment answers it directly: a <code>reviews</code> row would count toward <code>min_reviews_required</code>, feed the conflict engine, move <code>completed_review_count</code>, and consume concurrency slots — all in the code path that decides whether submissions auto-finalize, "where a miss is silent and serious."</p>
+
+<p class="analogy">A good lesson in system design generally: two things that <em>look</em> alike are still different if they participate in different rules.</p>
+
+<h4>The gate</h4>
+
+<p>When a program sets <code>fraud_check_required = true</code>, a file carrying a verdict must be fraud-checked before it can be reviewed. <code>FraudCheckService.evaluateGate</code> returns one of five states, and the two entry points into review refuse to proceed on <code>required</code> or <code>in_progress</code>.</p>
+
+<p>Two design choices worth studying:</p>
+
+<ul>
+<li><strong>The gate fails open.</strong> If the settings lookup errors, it treats the gate as disabled. The comment explains the trade: "a missed fraud check, not a stuck queue." Deciding which way a failure should fall is a judgement you'll face often.</li>
+<li><strong>The row <em>is</em> the claim.</strong> Opening the page inserts a row with <code>outcome IS NULL</code>; deciding fills the same row in. No separate claim table, no second write path.</li>
+</ul>
+
+<h2 id="part6">Part 6 — Working as a developer here</h2>
+
+<h3 id="s26">26. Running it locally</h3>
+
+<pre><code># Install dependencies (do this first — node_modules may be empty)
+npm install
+
+# Bring up Postgres, Redis, RabbitMQ and the app in Docker
+npm run dev:up
+
+# Apply database migrations
+npm run dev:migrate
+
+# Seed sample data
+npm run db:seed
+
+# Tear down, including volumes
+npm run dev:down</code></pre>
+
+<p>Everyday commands:</p>
+
+<table>
+<tr><th>Command</th><th>Does</th></tr>
+<tr><td><code>npm run dev</code></td><td>Run locally with auto-restart on file change</td></tr>
+<tr><td><code>npm run type-check</code></td><td>Compile without emitting — catches type errors</td></tr>
+<tr><td><code>npm run lint</code></td><td>Style and correctness rules</td></tr>
+<tr><td><code>npm run format</code></td><td>Auto-format with Prettier</td></tr>
+<tr><td><code>npm run test:unit</code></td><td>Fast tests, no infrastructure</td></tr>
+<tr><td><code>npm run test:integration</code></td><td>Real database and HTTP</td></tr>
+<tr><td><code>npm run db:generate</code></td><td>Create a migration from schema changes</td></tr>
+<tr><td><code>npm run db:studio</code></td><td>Browse the database in a GUI</td></tr>
+<tr><td><code>npm run scaffold:feature</code></td><td>Generate boilerplate for a new feature</td></tr>
+</table>
+
+<h3 id="s27">27. Testing</h3>
+
+<p>Two kinds, and knowing which to write is a skill in itself.</p>
+
+<h4>Unit tests</h4>
+
+<p><code>__tests__/unit/</code> — test one class with everything else faked. No database, no network, milliseconds to run.</p>
+
+<pre><code>mockProgramSettingRepo.getOne.mockResolvedValue({ fraud_check_required: false });
+
+const state = await service.evaluateGate('file-1', REVIEWER_A);
+
+expect(state).toEqual({ gate: 'not_applicable', reason: 'program_disabled', verdict });</code></pre>
+
+<p>This is dependency injection paying off. The service asked for a repo; the test handed it a fake.</p>
+
+<p>Use unit tests for <strong>logic with many branches</strong> — every state a function can return, every edge case.</p>
+
+<h4>Integration tests</h4>
+
+<p><code>__tests__/integration/</code> — start the real app against a real database and make real HTTP calls with supertest.</p>
+
+<pre><code>const response = await reviewer.get(fraudCheckPath(ids));
+
+expect(response.status).toBe(200);
+expect(response.body).toMatchObject({ gate: 'not_applicable', reason: 'program_disabled' });</code></pre>
+
+<p>Use integration tests for <strong>wiring</strong> — that the route is mounted, auth applies, the query is valid SQL, the response shape is right. A unit test cannot catch a typo in a route path.</p>
+
+<div class="note">
+<strong><code>toMatchObject</code> vs <code>toEqual</code>.</strong> <code>toEqual</code> demands an exact match; <code>toMatchObject</code> checks the listed fields are present and ignores extras. Integration tests here use <code>toMatchObject</code> deliberately, so adding an optional field to a response doesn't break unrelated tests — the same additive-change principle from §3.
+</div>
+
+<h3 id="s28">28. Adding a feature, end to end</h3>
+
+<p>A checklist, in the order that avoids rework:</p>
+
+<ol>
+<li><strong>Understand the existing flow first.</strong> Find the nearest similar endpoint and trace it as in §14. Most features are a variation on something already here.</li>
+<li><strong>Decide the layer.</strong> New table? New rule? New endpoint? Often only one layer changes.</li>
+<li><strong>Schema, if needed.</strong> Edit <code>src/db/schema/</code>, run <code>db:generate</code>, review the generated SQL, run <code>db:migrate</code>. New columns should be nullable or have a default so existing rows stay valid.</li>
+<li><strong>Model.</strong> Add or update the Zod schema in <code>src/models/</code> — this is where untrusted input is checked.</li>
+<li><strong>Repository.</strong> Add query methods. No business rules here.</li>
+<li><strong>Service.</strong> The actual logic. Own the transaction. Publish events inside it.</li>
+<li><strong>Controller.</strong> Parse input, call the service, map results to status codes. Add <code>@RateLimited</code> and an auth decorator.</li>
+<li><strong>Tests.</strong> Unit tests for the branches, one integration test for the wiring.</li>
+<li><strong>Check the whole surface.</strong> Does a list endpoint need the new field? A callback? Does an existing consumer need updating?</li>
+<li><strong>Run <code>type-check</code>, <code>lint</code>, and both test suites</strong> before opening a PR.</li>
+</ol>
+
+<div class="warn">
+<strong>Ask this before writing any code:</strong> can two users do this at the same time? If yes, you need a database-level guarantee (unique index, atomic operation, <code>FOR UPDATE</code>), not just an <code>if</code> statement. Nearly every hard bug in a system like this is a race condition.
+</div>
+
+<h3 id="s29">29. Debugging: where to look</h3>
+
+<table>
+<tr><th>Symptom</th><th>Look at</th></tr>
+<tr><td>404 on a route you added</td><td>Is the controller in an <code>@Api()</code> class? Is the base path what you think? Did the class get imported?</td></tr>
+<tr><td>401 / 403</td><td>Auth middleware decorator; token validity; org scoping in the query</td></tr>
+<tr><td>Endpoint returns empty data</td><td>Check <em>which</em> read path — a projected list query may simply not select the column (§16)</td></tr>
+<tr><td>Data saved but no event fired</td><td><code>outbox_events</code> table — is the row there? Is <code>OutboxProcessor</code> running? Is RabbitMQ enabled?</td></tr>
+<tr><td>Consumer not running</td><td>Queue name and routing key; check the dead letter queue</td></tr>
+<tr><td>Half-written state after an error</td><td>A repo call inside the transaction that wasn't passed <code>tx</code></td></tr>
+<tr><td>Works alone, breaks under load</td><td>Race condition — you need a constraint or an atomic operation</td></tr>
+<tr><td>Stale data after an update</td><td>Cache invalidation</td></tr>
+<tr><td>Tests pass, production breaks</td><td>Something only integration covers: real SQL, real middleware, real route mounting</td></tr>
+</table>
+
+<p>Logs are structured — search by <code>correlationId</code> to follow one request across services and workers.</p>
+
+<h3 id="s30">30. Conventions this codebase holds to</h3>
+
+<p>These aren't arbitrary style rules; each exists because breaking it caused a real problem.</p>
+
+<ol>
+<li><strong>Comments explain <em>why</em>, not <em>what</em>.</strong> The code says what it does. Comments here record the decision and, often, the bug that motivated it. When you change such code, update the comment — and if you're about to remove a guard, read its comment first; it usually explains what broke last time.</li>
+<li><strong>One producer per contract.</strong> If two endpoints return the same shape, they call the same method. Hand-building a second version of a payload has already caused a bug here.</li>
+<li><strong>Enforce server-side, don't just signal.</strong> Anything a client could route around must be checked on the server.</li>
+<li><strong>Fail fast at boot, fail open at runtime</strong> — where failing closed would block users from work they can't unblock. Decide consciously and write down which you chose.</li>
+<li><strong>Invariants belong in the database.</strong> "This can only happen once" is a constraint, not an <code>if</code>.</li>
+<li><strong>Additive API changes only</strong>, unless you're versioning.</li>
+<li><strong>Never edit an applied migration.</strong></li>
+<li><strong>Pass <code>tx</code> everywhere inside a transaction.</strong></li>
+<li><strong>Consumers must be idempotent.</strong></li>
+<li><strong>Paginate every list.</strong></li>
+</ol>
+
+<div class="note">
+<strong>Where to go next.</strong> The <code>docs/</code> folder has 60 documents. Most useful after this one: <code>getting-started/ARCHITECTURE_OVERVIEW.md</code>, <code>api-layer/README.md</code>, <code>data-layer/ATOMIC_OPERATIONS.md</code>, <code>event-system/OUTBOX_EVENT_PUBLISHING.md</code>, <code>domain/SUBMISSION_STATUS_GUIDE.md</code>, and <code>testing/OVERVIEW.md</code>. Read them alongside the code they describe — this codebase's comments are unusually good, and reading a service top to bottom teaches more than any summary.
+</div>
+
+</div>
