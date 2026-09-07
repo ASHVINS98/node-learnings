@@ -1,18 +1,22 @@
 import 'dotenv/config';
 import { todoRepo } from '@/repos/todo.repo';
 import { closeDb } from '@/db/client';
+import { todoService } from './services/todo.service';
 
 async function main() {
-	const created = await todoRepo.create({ title: 'My first todo' });
-	console.log('Created:', created);
-
-	const found = await todoRepo.findById(created.id);
-	console.log('Found:', found?.title);
-
-	const all = await todoRepo.findAll();
-	console.log('Total todos:', all.length);
-
-	await closeDb();
+	const created = await todoService.create({
+		title : "second todo"
+	})
+	console.log(created);
+	
+	try {
+		await todoService.getById('00000000-0000-4000-8000-000000000000');
+	} catch (err) {
+		console.log('Correctly threw:', (err as Error).message);
+	}
+	const list = await todoService.list();
+	console.log('All todos:', list);
+	await closeDb()
 }
 
 main();
