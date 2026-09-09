@@ -2,6 +2,8 @@ import express from 'express';
 
 import { todoRouter } from '@/routes/todo.routes';
 
+import { errorHandler } from '@/middleware/errorHandler';
+
 export function createApp() {
 	const app = express();	
 
@@ -13,6 +15,9 @@ export function createApp() {
 
 	// Everything in todoRouter now lives under /api/todos.
 	app.use('/api/todos', todoRouter);
+
+	// Apply the error handler to the entire application.
+	app.use(errorHandler);
 
 	return app;
 }
