@@ -1,15 +1,19 @@
 import { Router } from "express";
 import { todoService } from "@/services/todo.service";
+import { createTodoSchema,idParamSchema } from "../models/todo.model";
 
 export const todoRouter = Router()
 
 todoRouter.post('/',async (req,res) => {
-    const todo = await todoService.create(req.body);
+	const data = createTodoSchema.parse(req.body);
+    const todo = await todoService.create(data);
+
     return res.status(201).json(todo);
 })
 
 todoRouter.get('/:id', async (req, res) => {
-	const todo = await todoService.getById(req.params.id);
+	const idParams = idParamSchema.parse(req.params.id);
+	const todo = await todoService.getById(idParams.id);
 
 	res.json(todo);
 });
